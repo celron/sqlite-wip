@@ -21,10 +21,16 @@
                 <p class="event received">Device is Ready</p>
             </div>
             <div>
-                Database status
+                SQLite Database status
                 <p id="echo" class="database echo">echo</p>
                 <p id="self" class="database self">self</p>
             </div>
+            <div>
+            Pouchdb Database status
+            <p><div id="pouch_count" class="database echo">echo</div> records
+            <p id="pouch_info" class="database self">self</p>
+            </div>
+            <button id="init">Init</button>
             <button id="rowcount">ROWCOUNT</button>
             <button id="insert">INSERT</button>
             <button id="select">SELECT</button>

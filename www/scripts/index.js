@@ -27,7 +27,6 @@ var db;
         $('#select').click(select);
         $('#drop').click(drop);
     }
-    pouch();
     function rowcount(){
         rowcountTable(db);
     }
@@ -186,7 +185,7 @@ var db;
         });
         return retval;
     }
-    function output(message){
+    var output = function(message){
         console.log(message);
         $('#outputfield').append(message);
     }
@@ -234,58 +233,94 @@ var db;
             console.log(permament);
         });
     }
-} )();
-function pouch() {
-    db = new PouchDB('local');
-    db.info(function (error, result) {
-        if (!error)
-            console.log(result);
-        else
-            console.log(error)
-    });
-    console.log('open pouch');
-}
-function pouchinit(){
-    var wework = [
-        {
-        _id: '1',
-        name: 'wework wall street',
-        address: '110 Wall Street',
-        lat: 10,
-        lng: 20
-        },
-        {
-            _id: '2',
-            name: 'wework 34th',
-            address: '34 Wall Street',
+    function pouch() {
+        db = new PouchDB('local');
+        pouchrowcount();
+        console.log('open pouch');
+    }
+    function pouchinit(){    
+        $('#init').click(pouch);
+        $('#rowcount').click(pouchrowcount);
+        $('#insert').click(pouchinsert);
+        $('#select').click(pouch_read);
+        $('#drop').click(pouch_drop);    
+    }
+    function pouchrowcount(){
+        db.info(function (error, result) {
+            if (!error){
+                $('#pouch_count').text(result.doc_count+' rows');
+            }else{
+                output(error)
+            }
+        });
+       
+    }
+    function pouchinsert(){
+        var wework = [
+            {
+            _id: '1',
+            name: 'wework wall street',
+            address: '110 Wall Street',
             lat: 10,
             lng: 20
-        },
-        {
-            _id: '3',
-            name: 'wework 7th avenue',
-            address: '300 7th avenue',
-            lat: 10,
-            lng: 20
+            },
+            {
+                _id: '2',
+                name: 'wework 34th',
+                address: '34 Wall Street',
+                lat: 10,
+                lng: 20
+            },
+            {
+                _id: '3',
+                name: 'wework 7th avenue',
+                address: '300 7th avenue',
+                lat: 10,
+                lng: 20
+            }
+        ]
+        for (var i = 0; i < wework.length; i++) {
+            db.put(wework[i], function (err, result) {
+                if (!err)
+                    output('successful write');
+                else// 409 conflict, already exists
+                    output('write error:'+err.status+':'+err.name);
+            });
         }
-    ]
-    for (var i = 0; i < wework.length; i++) {
-        db.put(wework[i], function (err, result) {
-            if (!err)
-                console.log('successful write');
-            else// 409 conflict, already exists
-                console.log(err)
+    }
+    function pouch_write(){
+    
+    }
+    function pouch_read() {
+        db.allDocs(function (err, result) {
+
+            if (!err){
+                for(var i = 0;i< result.rows.length;i++){
+                    db.get(result.rows[i].id,function(err,result){
+                        if(!err)
+                            output(JSON.stringify(result));
+                    })                    
+                }
+                output(result);
+            }else
+                output(err);
         });
     }
-}
-function pouch_read(id) {
-    db.get(id, function (err, result) {
-        if (!err)
-            console.log(result);
-        else
-            console.log(err);
-    });
-}
-function index_read(id) {
-
-}
+    function index_read(id) {
+    
+    }
+    function pouch_drop(){
+        db.destroy(function(err, result){
+            if (!err)
+                output('database drop');
+            else
+                output(err);
+            
+        })
+    }
+    
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        //do work
+        pouchinit();
+      });
+} )();
