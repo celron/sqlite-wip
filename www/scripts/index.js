@@ -5,10 +5,11 @@
 var db;
 (function () {
     "use strict";
-    document.addEventListener( 'deviceready', onDeviceReady.bind( this ), false );
+    document.addEventListener('deviceready', onDeviceReady.bind(this), false);
 
     function onDeviceReady() {
-        console.log('device ready');
+        output('device ready');
+        getClusterData('+WEWORK');
         // Handle the Cordova pause and resume events
         document.addEventListener( 'pause', onPause.bind( this ), false );
         document.addEventListener( 'resume', onResume.bind( this ), false );
@@ -19,12 +20,14 @@ var db;
         var receivedElement = parentElement.querySelector('.received');
         listeningElement.setAttribute('style', 'display:none;');
         receivedElement.setAttribute('style', 'display:block;');
-        sqliteprocess();
+        //sqliteprocess();
+        pouchdbprocess();
         $('#rowcount').click(rowcount);
         $('#insert').click(insert);
         $('#select').click(select);
         $('#drop').click(drop);
     }
+    pouch();
     function rowcount(){
         rowcountTable(db);
     }
@@ -37,6 +40,7 @@ var db;
     function drop(){
         dropTable(db);
     }
+
     function sqliteprocess() {
         console.log('runing sqlite process');
         var echoElement = document.getElementById('echo');
@@ -198,4 +202,90 @@ var db;
         // TODO: This application has been reactivated. Restore application state here.
         console.log('on resume');
     }
+
+    function handleBlockCode(code) {
+        var retval = $.ajax({
+            type: 'POST',
+            url: 'https://www.hiamaps.com/getblocks.php',
+            data: {
+                action: 'getdrops',
+                inviteCode: code,
+                token: '',
+                selector: ''
+            },
+            xhrFields: {
+                withCredientials: false
+            },
+            error: function (xhr, desc, err) {
+                output('xhr:' + JSON.stringify(xhr));
+                output('Error:'+desc+err);
+            }
+        });
+        return retval;
+    }
+    function getClusterData(code) {
+        output('calling block code');
+        var data = handleBlockCode(code);
+        data.done(function (info) {
+            output('cluster returned');
+            wework = JSON.parse(info);
+            permanent = info.data;
+            output(permanent.length);
+            console.log(permament);
+        });
+    }
 } )();
+function pouch() {
+    db = new PouchDB('local');
+    db.info(function (error, result) {
+        if (!error)
+            console.log(result);
+        else
+            console.log(error)
+    });
+    console.log('open pouch');
+}
+function pouchinit(){
+    var wework = [
+        {
+        _id: '1',
+        name: 'wework wall street',
+        address: '110 Wall Street',
+        lat: 10,
+        lng: 20
+        },
+        {
+            _id: '2',
+            name: 'wework 34th',
+            address: '34 Wall Street',
+            lat: 10,
+            lng: 20
+        },
+        {
+            _id: '3',
+            name: 'wework 7th avenue',
+            address: '300 7th avenue',
+            lat: 10,
+            lng: 20
+        }
+    ]
+    for (var i = 0; i < wework.length; i++) {
+        db.put(wework[i], function (err, result) {
+            if (!err)
+                console.log('successful write');
+            else// 409 conflict, already exists
+                console.log(err)
+        });
+    }
+}
+function pouch_read(id) {
+    db.get(id, function (err, result) {
+        if (!err)
+            console.log(result);
+        else
+            console.log(err);
+    });
+}
+function index_read(id) {
+
+}

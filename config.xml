@@ -38,8 +38,9 @@
     </platform>
     <plugin name="cordova-sqlite-storage" spec="^2.3.1" />
     <plugin name="cordova-plugin-dialogs" spec="^2.0.1" />
-    <engine name="ios" spec="^4.2.0" />
-    <engine name="windows" spec="4.4.2" />
     <engine name="osx" spec="^4.0.1" />
     <engine name="android" spec="^7.0.0" />
+    <engine name="ios" spec="4.2.0" />
+    <engine name="windows" spec="^6.0.0" />
+>>>>>>> 5e38173fe858262b1fae4a3851eed8abe6de242a
 </widget>
