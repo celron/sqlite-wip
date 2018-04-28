@@ -6,6 +6,7 @@ var db;
 (function () {
     "use strict";
     document.addEventListener('deviceready', onDeviceReady.bind(this), false);
+    var code='+WEWORK';
 
     function onDeviceReady() {
         output('device ready');
@@ -235,7 +236,12 @@ var db;
     }
     function pouch() {
         db = new PouchDB('local');
-        pouchrowcount();
+        var results = pouchrowcount();
+        if(results === 0){
+            console.log(' resutls 0 query')
+
+        }
+
         console.log('open pouch');
     }
     function pouchinit(){    
@@ -249,8 +255,12 @@ var db;
         db.info(function (error, result) {
             if (!error){
                 $('#pouch_count').text(result.doc_count+' rows');
+                if(result.doc_count===0)
+                    query_last_date('+WEWORK');                
+                return result.doc_count;
             }else{
                 output(error)
+                return 0;
             }
         });
        
@@ -318,7 +328,71 @@ var db;
             
         })
     }
+    function query_from_date(code,date){
+        var retval = $.ajax({
+            type: 'POST',
+            url: 'https://www.hiamaps.com/getblocks.php',
+            data: {
+                action: 'getdrops',
+                inviteCode: code,
+                token: '',
+                selector: ''
+            },
+            xhrFields: {
+                withCredientials: false
+            },
+            error: function (xhr, desc, err) {
+                alert('Unable to find invite:' + desc);
+                console.log('error retrieving invite information' + xhr);
+                console.log('Details: ' + desc + '\nError:"+err');
+            }
+        });
+        return retval;
     
+    }
+    function query_last_date(code){
+        var retval = $.ajax({
+            type: 'POST',
+            url: 'http://staging.hialabs.com/getblocks.php',
+            data: {
+                action: 'getlastupdate',
+                inviteCode: code,
+                token: '',
+                selector: ''
+            },
+            xhrFields: {
+                withCredientials: false
+            },
+            error: function (xhr, desc, err) {
+                alert('Unable to find invite:' + desc);
+                console.log('error retrieving invite information' + xhr);
+                console.log('Details: ' + desc + '\nError:"+err');
+            }
+        });
+        return retval;
+    
+    }
+    function query(code){
+            var retval = $.ajax({
+                type: 'POST',
+                url: 'https://www.hiamaps.com/getblocks.php',
+                data: {
+                    action: 'getdrops',
+                    inviteCode: code,
+                    token: '',
+                    selector: ''
+                },
+                xhrFields: {
+                    withCredientials: false
+                },
+                error: function (xhr, desc, err) {
+                    alert('Unable to find invite:' + desc);
+                    console.log('error retrieving invite information' + xhr);
+                    console.log('Details: ' + desc + '\nError:"+err');
+                }
+            });
+            return retval;
+    }
     document.addEventListener("DOMContentLoaded", function(event) { 
         //do work
         pouchinit();
