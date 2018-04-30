@@ -7,7 +7,8 @@ var db;
     "use strict";
     document.addEventListener('deviceready', onDeviceReady.bind(this), false);
     var code='+WEWORK';
-
+    var url = "http://staging.hiamaps.com/getblocks.php";
+    var value;
     function onDeviceReady() {
         output('device ready');
         getClusterData('+WEWORK');
@@ -186,9 +187,10 @@ var db;
         });
         return retval;
     }
-    var output = function(message){
-        console.log(message);
-        $('#outputfield').append(message);
+    var output = function (message, flag) {
+        if(!flag)
+            console.log(message);
+        $('#outputfield').append("<p>"+message+"</p>");
     }
     function alertCallback() {
         console.log('alert callback')
@@ -206,7 +208,7 @@ var db;
     function handleBlockCode(code) {
         var retval = $.ajax({
             type: 'POST',
-            url: 'https://www.hiamaps.com/getblocks.php',
+            url: 'https://staging.hiamaps.com/getblocks.php',
             data: {
                 action: 'getdrops',
                 inviteCode: code,
@@ -235,89 +237,197 @@ var db;
         });
     }
     function pouch() {
+        /*
         db = new PouchDB('local');
         var results = pouchrowcount();
-        if(results === 0){
-            console.log(' resutls 0 query')
-
-        }
+        results.done(function (data) {
+            if (data === 0)
+                output('0 results');
+            else
+                output('there are '+data+' rows')
+        })
 
         console.log('open pouch');
+        */
+        window.data = new PersistantHCode('+WEWORK');
+
     }
     function pouchinit(){    
         $('#init').click(pouch);
         $('#rowcount').click(pouchrowcount);
-        $('#insert').click(pouchinsert);
+        //$('#insert').click(pouchinsert);
         $('#select').click(pouch_read);
+        $('#delete').click(pouch_delete);
         $('#drop').click(pouch_drop);    
-    }
-    function pouchrowcount(){
-        db.info(function (error, result) {
-            if (!error){
-                $('#pouch_count').text(result.doc_count+' rows');
-                if(result.doc_count===0)
-                    query_last_date('+WEWORK');                
-                return result.doc_count;
-            }else{
-                output(error)
-                return 0;
-            }
+        $('#test').click(test_pouch);
+        value = new PersistantHCode('+WEWORK');
+        value.flag.then(function (data) {
+            console.log('database loaded');
         });
-       
     }
-    function pouchinsert(){
-        var wework = [
-            {
-            _id: '1',
-            name: 'wework wall street',
-            address: '110 Wall Street',
-            lat: 10,
-            lng: 20
-            },
-            {
-                _id: '2',
-                name: 'wework 34th',
-                address: '34 Wall Street',
-                lat: 10,
-                lng: 20
-            },
-            {
-                _id: '3',
-                name: 'wework 7th avenue',
-                address: '300 7th avenue',
-                lat: 10,
-                lng: 20
-            }
-        ]
-        for (var i = 0; i < wework.length; i++) {
-            db.put(wework[i], function (err, result) {
-                if (!err)
-                    output('successful write');
-                else// 409 conflict, already exists
-                    output('write error:'+err.status+':'+err.name);
+    function pouch_delete() {
+        var cutoff = "2017-05-18 00:12:04";
+        if (value) {
+            value.findUpdatedAtAfter(cutoff).then(function (data) {
+                var counter = data.length;
+                for (var i = 0; i < data.length; i++) {
+                    value.deleteId(data[i]._id, data[i]._rev).then(function (result) {
+                        counter--;
+                        if (counter === 0) {
+                            console.log('delete done');
+                        }
+                    })
+                }
             });
         }
     }
-    function pouch_write(){
-    
+    function test_pouch() {
+        // delete entryes after
+        // then try to resync
+        var retval = pouch_delete();
+        retval.done(function () {
+            var max_date = pouch_query_max_date();
+            max_date.done(function (data) {
+                console.log('query from date' + data);
+                var retval2 = query_from_date('+WEWORK', data)
+                retval2.done(function (rawdata) {
+                    var data = JSON.parse(rawdata);
+                    console.log('rows' + data.data.length);
+                    for (var i = 0; i < data.data.length; i++) {
+                        data.data[i]._id = data.data[i].id;
+                        pouch_addrow(data.data[i]);
+                    }
+                })
+            });
+        });
+
     }
+    function check_pouchcontents(rowcount) {
+        if (rowcount === 0) {
+            // if it's empty, add the data'
+            query('+WEWORK').then(function (data, status) {
+                var return_data = JSON.parse(data);
+                for (var i = 0; i < return_data.data.length; i++) {
+                    return_data.data[i]._id = return_data.data[i].id;
+                    pouch_addrow(return_data.data[i]);
+                }
+                db.createIndex({
+                    index: {
+                        fields: ['name'],
+                        name: 'name'
+                    }
+                }).then(function (result) {
+                    console.log('name index ' + result.result);
+                });
+                db.createIndex({
+                    index: {
+                        fields: ['lat', 'lng'],
+                        name: 'location'
+                    }
+                }).then(function (result) {
+                    console.log('location index ' + result.result);
+                }); 
+                db.createIndex({
+                    index: {
+                        fields: ['updated_at'],
+                        name: 'updated_at'
+                    }
+                }).then(function (result) {
+                    console.log('updated_at index ' + result.result);
+                    data = pouch_query_max_date();
+                    data.done(function (data, status) {
+                        output('max date:' + data);
+                    })
+                    /*
+                    db.find({
+                        selector: {
+                            updated_at: { $gt: '' }
+                        },
+                        fields: [ 'updated_at']
+                    }).then(function (result) {
+                        var data = result.docs.reverse();
+                        output(data[0]);
+                        db.max_date = data[0].updated_at;
+                        console.log(new Date(db.max_date
+
+                        ));
+                    });
+                */
+                });
+            });
+        }
+    }
+    function update_pouchcontents() {
+
+    }
+    function pouchrowcount() {
+        var retval = $.Deferred();
+        db.info(function (error, result) {
+            if (!error){
+                $('#pouch_count').text(result.doc_count + ' rows');
+                check_pouchcontents(result.doc_count);
+                retval.resolve(result.doc_count);
+            }else{
+                output(error)
+                retval.resolve(0);
+            }
+        });
+        return retval;
+       
+    }
+    function pouch_addrow(data) {
+        db.put(data);
+    }
+
     function pouch_read() {
+        if (value)
+            value.selectAll().then(function (data) {
+                output('number of rows read ' + data.length);
+                window.array = data;
+            });
+        /*
         db.allDocs(function (err, result) {
 
-            if (!err){
+            if (!err) {
+                window.array = result.rows;
                 for(var i = 0;i< result.rows.length;i++){
                     db.get(result.rows[i].id,function(err,result){
-                        if(!err)
-                            output(JSON.stringify(result));
+                        if (!err) {
+                            output(JSON.stringify(result), 1);
+                        }
                     })                    
                 }
                 output(result);
             }else
                 output(err);
-        });
+        });*/
     }
-    function index_read(id) {
-    
+
+    function pouch_query_date(date) {
+        var retval = $.Deferred();
+        db.find({
+            selector: {
+                updated_at: { $eq: date }
+            },
+            fields: ['updated_at', 'id']
+        }).then(function (result) {
+            retval.resolve(result.docs);
+        });
+        return retval;
+
+    }
+    function pouch_query_max_date(){
+        var retval = $.Deferred();
+        db.find({
+            selector: {
+                updated_at: { $gt: '' }
+            },
+            fields: ['updated_at','id']
+        }).then(function (result) {
+            var data = result.docs.reverse();
+            retval.resolve(data[0].updated_at);
+            });
+        return retval;
     }
     function pouch_drop(){
         db.destroy(function(err, result){
@@ -331,10 +441,11 @@ var db;
     function query_from_date(code,date){
         var retval = $.ajax({
             type: 'POST',
-            url: 'https://www.hiamaps.com/getblocks.php',
+            url: url,
             data: {
-                action: 'getdrops',
+                action: 'getdropsfrom',
                 inviteCode: code,
+                fromDate: date,
                 token: '',
                 selector: ''
             },
@@ -353,9 +464,9 @@ var db;
     function query_last_date(code){
         var retval = $.ajax({
             type: 'POST',
-            url: 'http://staging.hialabs.com/getblocks.php',
+            url: url,
             data: {
-                action: 'getlastupdate',
+                action: 'getmaxtime',
                 inviteCode: code,
                 token: '',
                 selector: ''
@@ -375,7 +486,7 @@ var db;
     function query(code){
             var retval = $.ajax({
                 type: 'POST',
-                url: 'https://www.hiamaps.com/getblocks.php',
+                url: url,
                 data: {
                     action: 'getdrops',
                     inviteCode: code,
@@ -398,3 +509,27 @@ var db;
         pouchinit();
       });
 } )();
+function array_compare(a, b) {
+    if (a.length > b.length)
+        for (var i = 0; i < a.length; i++) {
+            var flag = false;
+            for (var j = 0; j < b.length; j++) {
+                if (a[i].id === b[j].id)
+                    flag = true;
+            }
+            if (flag === false)
+                console.log(a[i].id + ' was not found');
+        }
+    else array_compare(b, a);
+}
+function index_read(id) {
+    var data = "2017-05-18 00:12:04"
+    db.find({
+        selector: {
+            _id: { $eq: id }
+        }
+    }).then(function (result) {
+        console.log
+            (JSON.stringify(result));
+    })
+}

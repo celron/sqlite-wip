@@ -5,7 +5,7 @@
         Customize the content security policy in the meta tag below as needed. Add 'unsafe-inline' to default-src to enable inline JavaScript.
         For details, see http://go.microsoft.com/fwlink/?LinkID=617521
     -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *">
+        <meta http-equiv="Content-Security-Policy" content="default-src * ;connect-src *; style-src 'self' 'unsafe-inline'; media-src *">
         
         <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
         <meta name="format-detection" content="telephone=no">
@@ -26,14 +26,16 @@
                 <p id="self" class="database self">self</p>
             </div>
             <div>
-            Pouchdb Database status
-            <p><div id="pouch_count" class="database echo">echo</div> records
-            <p id="pouch_info" class="database self">self</p>
+                Pouchdb Database status
+                <p><div id="pouch_count" class="database echo">echo</div> records
+                <p id="pouch_info" class="database self">self</p>
             </div>
             <button id="init">Init</button>
             <button id="rowcount">ROWCOUNT</button>
             <button id="insert">INSERT</button>
             <button id="select">SELECT</button>
+            <button id="test">SELECTED QUERY</button>
+            <button id="delete">DELETE</button>
             <button id="drop">DROP</button>
 
             <div id="outputfield">nothing</div>
@@ -44,5 +46,6 @@
         <script type="text/javascript" src="scripts/jquery-3.3.1.min.js"></script>
         <script type="text/javascript" src="scripts/pouchdb-6.4.3.min.js"></script>
         <script type="text/javascript" src="scripts/pouchdb.find.min.js"></script>
+        <script type="text/javascript" src="scripts/PersistantHCode.js"></script>
     </body>
 </html>
