@@ -266,6 +266,7 @@ var db;
         });
     }
     function pouch_delete() {
+        console.log('puch delete called')
         var cutoff = "2017-05-18 00:12:04";
         var retval = $.Deferred();
         if (value) {
@@ -287,6 +288,7 @@ var db;
         return retval;
     }
     function test_pouch() {
+        console.log('pouch test called');
         // delete entryes after
         // then try to resync
         var retval = pouch_delete();
@@ -323,7 +325,7 @@ var db;
             });
     }
     function pouch_drop(){
-        value.drop().then(function(data){
+        value.dropDb().then(function(data){
             output('drop done');
         });
     }

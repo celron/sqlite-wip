@@ -14,6 +14,7 @@ class PersistantHCode {
         var retdata = this.rowCount();
         var obj = this;
         retdata.done(function (value) {
+            console.log('rows '+value);
         if (value === 0) {
             var retval = obj.query(obj.code,obj.url);
             retval.done(function (data, status) {
