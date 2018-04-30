@@ -107,7 +107,10 @@ class PersistantHCode {
             fields: ['updated_at', 'id']
         }).then(function (result) {
             var data = result.docs.reverse();
-            retval.resolve(data[0].updated_at);
+	    if(data.length>0)
+            	retval.resolve(data[0].updated_at);
+            else
+		retval.resolve(0);
         });
         return retval;
     }
