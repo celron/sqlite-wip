@@ -385,22 +385,6 @@ var db;
                 output('number of rows read ' + data.length);
                 window.array = data;
             });
-        /*
-        db.allDocs(function (err, result) {
-
-            if (!err) {
-                window.array = result.rows;
-                for(var i = 0;i< result.rows.length;i++){
-                    db.get(result.rows[i].id,function(err,result){
-                        if (!err) {
-                            output(JSON.stringify(result), 1);
-                        }
-                    })                    
-                }
-                output(result);
-            }else
-                output(err);
-        });*/
     }
 
     function pouch_query_date(date) {
