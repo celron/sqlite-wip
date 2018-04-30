@@ -267,26 +267,31 @@ var db;
     }
     function pouch_delete() {
         var cutoff = "2017-05-18 00:12:04";
+        var retval = $.Deferred();
         if (value) {
             value.findUpdatedAtAfter(cutoff).then(function (data) {
                 var counter = data.length;
+                if(counter === 0)
+                    retval.resolve(0);
                 for (var i = 0; i < data.length; i++) {
                     value.deleteId(data[i]._id, data[i]._rev).then(function (result) {
                         counter--;
                         if (counter === 0) {
                             console.log('delete done');
+                            retval.resolve(0);
                         }
                     })
                 }
             });
         }
+        return retval;
     }
     function test_pouch() {
         // delete entryes after
         // then try to resync
         var retval = pouch_delete();
         retval.done(function () {
-            var max_date = pouch_query_max_date();
+            var max_date = value.maxDate();
             max_date.done(function (data) {
                 console.log('query from date' + data);
                 var retval2 = query_from_date('+WEWORK', data)
@@ -295,90 +300,21 @@ var db;
                     console.log('rows' + data.data.length);
                     for (var i = 0; i < data.data.length; i++) {
                         data.data[i]._id = data.data[i].id;
-                        pouch_addrow(data.data[i]);
+                        value.pouch_addrow(data.data[i]);
                     }
                 })
             });
         });
 
     }
-    function check_pouchcontents(rowcount) {
-        if (rowcount === 0) {
-            // if it's empty, add the data'
-            query('+WEWORK').then(function (data, status) {
-                var return_data = JSON.parse(data);
-                for (var i = 0; i < return_data.data.length; i++) {
-                    return_data.data[i]._id = return_data.data[i].id;
-                    pouch_addrow(return_data.data[i]);
-                }
-                db.createIndex({
-                    index: {
-                        fields: ['name'],
-                        name: 'name'
-                    }
-                }).then(function (result) {
-                    console.log('name index ' + result.result);
-                });
-                db.createIndex({
-                    index: {
-                        fields: ['lat', 'lng'],
-                        name: 'location'
-                    }
-                }).then(function (result) {
-                    console.log('location index ' + result.result);
-                }); 
-                db.createIndex({
-                    index: {
-                        fields: ['updated_at'],
-                        name: 'updated_at'
-                    }
-                }).then(function (result) {
-                    console.log('updated_at index ' + result.result);
-                    data = pouch_query_max_date();
-                    data.done(function (data, status) {
-                        output('max date:' + data);
-                    })
-                    /*
-                    db.find({
-                        selector: {
-                            updated_at: { $gt: '' }
-                        },
-                        fields: [ 'updated_at']
-                    }).then(function (result) {
-                        var data = result.docs.reverse();
-                        output(data[0]);
-                        db.max_date = data[0].updated_at;
-                        console.log(new Date(db.max_date
-
-                        ));
-                    });
-                */
-                });
-            });
-        }
-    }
-    function update_pouchcontents() {
-
-    }
     function pouchrowcount() {
         var retval = $.Deferred();
-        db.info(function (error, result) {
-            if (!error){
-                $('#pouch_count').text(result.doc_count + ' rows');
-                check_pouchcontents(result.doc_count);
-                retval.resolve(result.doc_count);
-            }else{
-                output(error)
-                retval.resolve(0);
-            }
-        });
+        value.rowCount().then(function(data){
+            output('rows:'+data);
+        })
         return retval;
-       
+      
     }
-    function pouch_addrow(data) {
-        db.put(data);
-    }
-
     function pouch_read() {
         if (value)
             value.selectAll().then(function (data) {
@@ -386,41 +322,10 @@ var db;
                 window.array = data;
             });
     }
-
-    function pouch_query_date(date) {
-        var retval = $.Deferred();
-        db.find({
-            selector: {
-                updated_at: { $eq: date }
-            },
-            fields: ['updated_at', 'id']
-        }).then(function (result) {
-            retval.resolve(result.docs);
-        });
-        return retval;
-
-    }
-    function pouch_query_max_date(){
-        var retval = $.Deferred();
-        db.find({
-            selector: {
-                updated_at: { $gt: '' }
-            },
-            fields: ['updated_at','id']
-        }).then(function (result) {
-            var data = result.docs.reverse();
-            retval.resolve(data[0].updated_at);
-            });
-        return retval;
-    }
     function pouch_drop(){
-        db.destroy(function(err, result){
-            if (!err)
-                output('database drop');
-            else
-                output(err);
-            
-        })
+        value.drop().then(function(data){
+            output('drop done');
+        });
     }
     function query_from_date(code,date){
         var retval = $.ajax({

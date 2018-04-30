@@ -15,27 +15,28 @@ class PersistantHCode {
         var obj = this;
         retdata.done(function (value) {
         if (value === 0) {
-            var retval = query(this.code,this.url);
+            var retval = obj.query(obj.code,obj.url);
             retval.done(function (data, status) {
+                var return_data = JSON.parse(data);
                 for (var i = 0; i < return_data.data.length; i++) {
                     return_data.data[i]._id = return_data.data[i].id;
-                    pouch_addrow(return_data.data[i]);
+                    obj.pouch_addrow(return_data.data[i]);
                 }
-                db.createIndex({
+                obj.db.createIndex({
                     index: {
                         fields: ['name'],
                         name: 'name'
                     }
                 }).then(function (result) {
                     console.log('name index ' + result.result);
-                    db.createIndex({
+                    obj.db.createIndex({
                         index: {
                             fields: ['lat', 'lng'],
                             name: 'location'
                         }
                     }).then(function (result) {
                         console.log('location index ' + result.result);
-                        db.createIndex({
+                        obj.db.createIndex({
                             index: {
                                 fields: ['updated_at'],
                                 name: 'updated_at'
